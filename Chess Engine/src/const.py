@@ -1,0 +1,10 @@
+# Screen dimensions
+BOARD_SIZE = 800
+PANEL_WIDTH = 300
+WIDTH = BOARD_SIZE + PANEL_WIDTH
+HEIGHT = 800
+
+# Board dimensions
+ROWS = 8
+COLS = 8
+SQSIZE = BOARD_SIZE // COLS
