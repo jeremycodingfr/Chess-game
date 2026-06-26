@@ -28,26 +28,35 @@ class Main:
         pygame.display.set_caption('Chess AI')
         self.clock = pygame.time.Clock()
 
-        self.title_font = pygame.font.SysFont('arial', 30, bold=True)
+        # Professional UI fonts. These use common system fallbacks.
+        self.title_font = pygame.font.SysFont('arial', 28, bold=True)
         self.result_font = pygame.font.SysFont('arial', 42, bold=True)
-        self.heading_font = pygame.font.SysFont('arial', 20, bold=True)
-        self.body_font = pygame.font.SysFont('arial', 17)
-        self.small_font = pygame.font.SysFont('arial', 14)
+        self.heading_font = pygame.font.SysFont('arial', 18, bold=True)
+        self.body_font = pygame.font.SysFont('arial', 15)
+        self.body_bold_font = pygame.font.SysFont('arial', 15, bold=True)
+        self.button_font = pygame.font.SysFont('arial', 15, bold=True)
+        self.small_font = pygame.font.SysFont('arial', 12)
+        self.tiny_font = pygame.font.SysFont('arial', 11)
 
         self.difficulties = ['Easy', 'Medium', 'Hard']
         self.difficulty_index = 1
         self.difficulty = self.difficulties[self.difficulty_index]
 
-        # Right-side UI layout. Keep spacing stable so the panel does not break.
-        self.difficulty_button = pygame.Rect(BOARD_SIZE + 25, 120, PANEL_WIDTH - 50, 36)
-        self.resign_button = pygame.Rect(BOARD_SIZE + 25, HEIGHT - 132, PANEL_WIDTH - 50, 44)
-        self.draw_offer_button = pygame.Rect(BOARD_SIZE + 25, HEIGHT - 78, PANEL_WIDTH - 50, 44)
-        self.history_view_rect = pygame.Rect(BOARD_SIZE + 20, 310, PANEL_WIDTH - 40, HEIGHT - 500)
-        self.history_row_height = 24
+        # Right-side UI layout. Kept compact so it fits beside the 800px board.
+        self.panel_margin = 22
+        self.panel_inner_width = PANEL_WIDTH - (self.panel_margin * 2)
+        panel_x = BOARD_SIZE + self.panel_margin
+
+        self.difficulty_button = pygame.Rect(panel_x, 154, self.panel_inner_width, 40)
+        self.history_view_rect = pygame.Rect(panel_x, 340, self.panel_inner_width, 250)
+        self.resign_button = pygame.Rect(panel_x, HEIGHT - 124, self.panel_inner_width, 42)
+        self.draw_offer_button = pygame.Rect(panel_x, HEIGHT - 70, self.panel_inner_width, 42)
+
+        self.history_row_height = 25
         self.history_scroll = 0
         self.needs_redraw = True
 
-        button_width = 210
+        button_width = 220
         button_height = 48
         self.play_again_button = pygame.Rect(
             (WIDTH - button_width) // 2,
@@ -234,7 +243,7 @@ class Main:
 
     def get_history_max_scroll(self):
         pairs = self.get_move_pairs()
-        visible_rows = max(1, (self.history_view_rect.height - 16) // self.history_row_height)
+        visible_rows = max(1, (self.history_view_rect.height - 32) // self.history_row_height)
         return max(0, len(pairs) - visible_rows)
 
     def scroll_history(self, amount):
@@ -396,39 +405,85 @@ class Main:
         trace = self.to_rgb(theme.trace.dark)
         move_color = self.to_rgb(theme.moves.dark)
 
-        panel_bg = self.mix(dark, (12, 16, 24), 0.50)
-        card_bg = self.mix(dark, (255, 255, 255), 0.12)
-        card_border = self.mix(trace, light, 0.20)
-        muted_text = self.mix(light, (255, 255, 255), 0.30)
-        line = self.mix(trace, (255, 255, 255), 0.15)
-        button = self.mix(move_color, dark, 0.20)
-        resign = self.mix((190, 60, 60), dark, 0.15)
+        panel_bg = self.mix(dark, (13, 17, 28), 0.68)
+        panel_bg_2 = self.mix(panel_bg, (255, 255, 255), 0.04)
+        card_bg = self.mix(panel_bg, (255, 255, 255), 0.08)
+        card_bg_hover = self.mix(card_bg, (255, 255, 255), 0.07)
+        card_border = self.mix(trace, (255, 255, 255), 0.25)
+        accent = self.mix(move_color, (255, 255, 255), 0.08)
+        accent_hover = self.mix(accent, (255, 255, 255), 0.12)
+        muted_text = self.mix(light, (255, 255, 255), 0.20)
+        line = self.mix(trace, (255, 255, 255), 0.18)
 
         return {
             'panel_bg': panel_bg,
+            'panel_bg_2': panel_bg_2,
             'card_bg': card_bg,
+            'card_bg_hover': card_bg_hover,
             'card_border': card_border,
-            'title': (245, 248, 255),
-            'body': (235, 240, 250),
+            'title': (248, 250, 252),
+            'body': (225, 231, 239),
             'muted': muted_text,
             'line': line,
-            'button': button,
-            'resign': resign,
-            'disabled': (95, 95, 95),
-            'overlay': (0, 0, 0, 165)
+            'accent': accent,
+            'accent_hover': accent_hover,
+            'accent_dark': self.mix(accent, (0, 0, 0), 0.22),
+            'danger': self.mix((202, 64, 73), dark, 0.10),
+            'danger_hover': self.mix((226, 75, 85), dark, 0.06),
+            'success': (72, 187, 120),
+            'disabled': (84, 91, 105),
+            'overlay': (8, 11, 18, 178),
+            'shadow': (0, 0, 0, 70),
+            'row_alt': self.mix(card_bg, (255, 255, 255), 0.04),
         }
 
+    def draw_panel_background(self, surface, panel_x, palette):
+        pygame.draw.rect(surface, palette['panel_bg'], (panel_x, 0, PANEL_WIDTH, HEIGHT))
+        for y in range(0, HEIGHT, 4):
+            ratio = y / HEIGHT
+            color = self.mix(palette['panel_bg'], palette['panel_bg_2'], ratio)
+            pygame.draw.rect(surface, color, (panel_x, y, PANEL_WIDTH, 4))
+        pygame.draw.line(surface, palette['line'], (panel_x, 0), (panel_x, HEIGHT), 2)
+
+    def draw_card(self, surface, rect, palette, radius=14, shadow=True):
+        if shadow:
+            shadow_surface = pygame.Surface((rect.width + 10, rect.height + 10), pygame.SRCALPHA)
+            pygame.draw.rect(
+                shadow_surface,
+                palette['shadow'],
+                (5, 6, rect.width, rect.height),
+                border_radius=radius
+            )
+            surface.blit(shadow_surface, (rect.x - 5, rect.y - 5))
+
+        pygame.draw.rect(surface, palette['card_bg'], rect, border_radius=radius)
+        pygame.draw.rect(surface, palette['card_border'], rect, width=1, border_radius=radius)
+
     def draw_text(self, surface, text, font, color, x, y):
-        label = font.render(text, True, color)
+        label = font.render(str(text), True, color)
         surface.blit(label, (x, y))
 
+    def draw_text_right(self, surface, text, font, color, right_x, y):
+        label = font.render(str(text), True, color)
+        surface.blit(label, (right_x - label.get_width(), y))
+
     def draw_centered_text(self, surface, text, font, color, center_x, y):
-        label = font.render(text, True, color)
+        label = font.render(str(text), True, color)
         rect = label.get_rect(center=(center_x, y))
         surface.blit(label, rect)
 
+    def truncate_text(self, text, font, max_width):
+        text = str(text)
+        if font.size(text)[0] <= max_width:
+            return text
+
+        ellipsis = '...'
+        while text and font.size(text + ellipsis)[0] > max_width:
+            text = text[:-1]
+        return text + ellipsis
+
     def draw_wrapped_text(self, surface, text, font, color, rect, max_lines=2):
-        words = text.split(' ')
+        words = str(text).split(' ')
         lines = []
         current = ''
 
@@ -445,12 +500,33 @@ class Main:
             lines.append(current)
 
         for i, line in enumerate(lines[:max_lines]):
-            self.draw_text(surface, line, font, color, rect.x, rect.y + i * 21)
+            if i == max_lines - 1 and len(lines) > max_lines:
+                line = self.truncate_text(line, font, rect.width)
+            self.draw_text(surface, line, font, color, rect.x, rect.y + i * 20)
 
-    def draw_button(self, surface, rect, text, bg_color, text_color=(255, 255, 255)):
-        pygame.draw.rect(surface, bg_color, rect, border_radius=10)
-        pygame.draw.rect(surface, (255, 255, 255), rect, width=2, border_radius=10)
-        label = self.heading_font.render(text, True, text_color)
+    def draw_chip(self, surface, rect, text, palette, selected=False):
+        fill = palette['accent'] if selected else self.mix(palette['card_bg'], (255, 255, 255), 0.06)
+        border = palette['accent_hover'] if selected else palette['card_border']
+        pygame.draw.rect(surface, fill, rect, border_radius=14)
+        pygame.draw.rect(surface, border, rect, width=1, border_radius=14)
+        label_color = palette['title'] if selected else palette['body']
+        label = self.small_font.render(text, True, label_color)
+        surface.blit(label, label.get_rect(center=rect.center))
+
+    def draw_button(self, surface, rect, text, bg_color, text_color=(255, 255, 255), disabled=False):
+        palette = self.ui_palette()
+        mouse_pos = pygame.mouse.get_pos()
+        hovered = rect.collidepoint(mouse_pos) and not disabled
+        fill = self.mix(bg_color, (255, 255, 255), 0.10) if hovered else bg_color
+        border = self.mix(fill, (255, 255, 255), 0.32)
+
+        shadow_surface = pygame.Surface((rect.width + 8, rect.height + 8), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surface, palette['shadow'], (4, 5, rect.width, rect.height), border_radius=12)
+        surface.blit(shadow_surface, (rect.x - 4, rect.y - 4))
+
+        pygame.draw.rect(surface, fill, rect, border_radius=12)
+        pygame.draw.rect(surface, border, rect, width=1, border_radius=12)
+        label = self.button_font.render(text, True, text_color)
         label_rect = label.get_rect(center=rect.center)
         surface.blit(label, label_rect)
 
@@ -458,72 +534,121 @@ class Main:
         if pairs_count <= visible_rows:
             return
 
-        track = pygame.Rect(self.history_view_rect.right - 9, self.history_view_rect.y + 8, 5, self.history_view_rect.height - 16)
-        pygame.draw.rect(surface, self.mix(palette['card_bg'], (255, 255, 255), 0.15), track, border_radius=4)
+        track = pygame.Rect(self.history_view_rect.right - 10, self.history_view_rect.y + 42, 5, self.history_view_rect.height - 52)
+        pygame.draw.rect(surface, self.mix(palette['card_bg'], (255, 255, 255), 0.12), track, border_radius=5)
 
-        thumb_height = max(30, int(track.height * (visible_rows / pairs_count)))
+        thumb_height = max(34, int(track.height * (visible_rows / pairs_count)))
         max_scroll = max(1, pairs_count - visible_rows)
         start_index = max_scroll - self.history_scroll
         scroll_ratio = start_index / max_scroll
         thumb_y = track.y + int((track.height - thumb_height) * scroll_ratio)
 
         thumb = pygame.Rect(track.x, thumb_y, track.width, thumb_height)
-        pygame.draw.rect(surface, palette['line'], thumb, border_radius=4)
+        pygame.draw.rect(surface, palette['accent_hover'], thumb, border_radius=5)
 
-    def draw_panel(self, surface):
-        panel_x = BOARD_SIZE
-        palette = self.ui_palette()
+    def draw_header(self, surface, panel_x, palette):
+        self.draw_text(surface, 'CHESS ENGINE', self.title_font, palette['title'], panel_x + self.panel_margin, 24)
+        self.draw_text(surface, 'Python + Pygame AI', self.small_font, palette['muted'], panel_x + self.panel_margin + 2, 58)
 
-        pygame.draw.rect(surface, palette['panel_bg'], (panel_x, 0, PANEL_WIDTH, HEIGHT))
-        pygame.draw.line(surface, palette['line'], (panel_x, 0), (panel_x, HEIGHT), 3)
+        badge = pygame.Rect(panel_x + self.panel_margin, 82, self.panel_inner_width, 38)
+        self.draw_card(surface, badge, palette, radius=14, shadow=False)
+        self.draw_text(surface, 'Mode', self.small_font, palette['muted'], badge.x + 14, badge.y + 12)
+        self.draw_text_right(surface, f'{self.human_color.capitalize()} vs AI', self.body_bold_font, palette['title'], badge.right - 14, badge.y + 10)
 
-        self.draw_text(surface, 'Chess Engine AI', self.title_font, palette['title'], panel_x + 24, 24)
-        self.draw_text(surface, f'You: {self.human_color.capitalize()}', self.body_font, palette['body'], panel_x + 26, 68)
-        self.draw_text(surface, f'AI: {self.ai_color.capitalize()}', self.body_font, palette['body'], panel_x + 26, 92)
+    def draw_player_card(self, surface, panel_x, palette):
+        card = pygame.Rect(panel_x + self.panel_margin, 132, self.panel_inner_width, 80)
+        self.draw_card(surface, card, palette)
 
-        difficulty_color = palette['button'] if not self.game_over else palette['disabled']
-        self.draw_button(surface, self.difficulty_button, f'Difficulty: {self.difficulty}', difficulty_color)
+        self.draw_text(surface, 'PLAYERS', self.small_font, palette['muted'], card.x + 14, card.y + 12)
+        self.draw_text(surface, 'You', self.body_font, palette['body'], card.x + 14, card.y + 38)
+        self.draw_text_right(surface, self.human_color.capitalize(), self.body_bold_font, palette['title'], card.right - 14, card.y + 38)
+        self.draw_text(surface, 'AI', self.body_font, palette['body'], card.x + 14, card.y + 58)
+        self.draw_text_right(surface, self.ai_color.capitalize(), self.body_bold_font, palette['title'], card.right - 14, card.y + 58)
 
-        status_rect = pygame.Rect(panel_x + 20, 176, PANEL_WIDTH - 40, 68)
-        pygame.draw.rect(surface, palette['card_bg'], status_rect, border_radius=10)
-        pygame.draw.rect(surface, palette['card_border'], status_rect, width=1, border_radius=10)
-        self.draw_text(surface, 'Status', self.small_font, palette['muted'], panel_x + 35, 187)
-        text_rect = pygame.Rect(panel_x + 35, 209, PANEL_WIDTH - 70, 42)
-        self.draw_wrapped_text(surface, self.status_message, self.body_font, palette['title'], text_rect, max_lines=2)
+    def draw_difficulty_card(self, surface, panel_x, palette):
+        card = pygame.Rect(panel_x + self.panel_margin, 228, self.panel_inner_width, 88)
+        self.draw_card(surface, card, palette)
+        self.draw_text(surface, 'DIFFICULTY', self.small_font, palette['muted'], card.x + 14, card.y + 12)
 
-        self.draw_text(surface, 'Move History', self.heading_font, palette['title'], panel_x + 24, 274)
-        pygame.draw.line(surface, palette['line'], (panel_x + 24, 302), (WIDTH - 24, 302), 2)
+        levels = ['Easy', 'Medium', 'Hard']
+        chip_width = (card.width - 38) // 3
+        for i, level in enumerate(levels):
+            chip = pygame.Rect(card.x + 14 + i * (chip_width + 5), card.y + 36, chip_width, 28)
+            self.draw_chip(surface, chip, level, palette, selected=(level == self.difficulty))
+
+        helper = 'Click card to change AI level'
+        self.draw_text(surface, helper, self.tiny_font, palette['muted'], card.x + 14, card.y + 68)
+        self.difficulty_button = card
+
+    def draw_status_card(self, surface, panel_x, palette):
+        card = pygame.Rect(panel_x + self.panel_margin, 330, self.panel_inner_width, 78)
+        self.draw_card(surface, card, palette)
+        self.draw_text(surface, 'STATUS', self.small_font, palette['muted'], card.x + 14, card.y + 12)
+        text_rect = pygame.Rect(card.x + 14, card.y + 34, card.width - 28, 40)
+        self.draw_wrapped_text(surface, self.status_message, self.body_bold_font, palette['title'], text_rect, max_lines=2)
+
+    def draw_history_card(self, surface, panel_x, palette):
+        card = pygame.Rect(panel_x + self.panel_margin, 424, self.panel_inner_width, 210)
+        self.draw_card(surface, card, palette)
+        self.draw_text(surface, 'MOVE HISTORY', self.small_font, palette['muted'], card.x + 14, card.y + 12)
+        self.draw_text_right(surface, f'{len(self.move_history)} moves', self.tiny_font, palette['muted'], card.right - 14, card.y + 13)
+
+        self.history_view_rect = pygame.Rect(card.x + 10, card.y + 36, card.width - 20, card.height - 46)
+        header = pygame.Rect(self.history_view_rect.x, self.history_view_rect.y, self.history_view_rect.width, 26)
+        pygame.draw.rect(surface, self.mix(palette['card_bg'], (255, 255, 255), 0.08), header, border_radius=8)
+
+        self.draw_text(surface, '#', self.tiny_font, palette['muted'], header.x + 10, header.y + 8)
+        self.draw_text(surface, 'White', self.tiny_font, palette['muted'], header.x + 40, header.y + 8)
+        self.draw_text(surface, 'Black', self.tiny_font, palette['muted'], header.x + 128, header.y + 8)
 
         pairs = self.get_move_pairs()
-        visible_rows = max(1, (self.history_view_rect.height - 16) // self.history_row_height)
+        rows_area_height = self.history_view_rect.height - 32
+        visible_rows = max(1, rows_area_height // self.history_row_height)
         max_scroll = max(0, len(pairs) - visible_rows)
         self.history_scroll = max(0, min(max_scroll, self.history_scroll))
         start_index = max_scroll - self.history_scroll
         visible_pairs = pairs[start_index:start_index + visible_rows]
 
-        pygame.draw.rect(surface, self.mix(palette['card_bg'], (0, 0, 0), 0.10), self.history_view_rect, border_radius=8)
-        pygame.draw.rect(surface, palette['card_border'], self.history_view_rect, width=1, border_radius=8)
-
         previous_clip = surface.get_clip()
-        surface.set_clip(self.history_view_rect)
+        rows_clip = pygame.Rect(self.history_view_rect.x, self.history_view_rect.y + 30, self.history_view_rect.width, rows_area_height)
+        surface.set_clip(rows_clip)
 
         for row_index, (index, white_move, black_move) in enumerate(visible_pairs):
-            y = self.history_view_rect.y + 10 + (row_index * self.history_row_height)
-            self.draw_text(surface, f'{index}.', self.small_font, palette['muted'], panel_x + 28, y)
-            self.draw_text(surface, white_move, self.small_font, palette['title'], panel_x + 62, y)
-            self.draw_text(surface, black_move, self.small_font, palette['body'], panel_x + 155, y)
+            y = rows_clip.y + (row_index * self.history_row_height)
+            row_rect = pygame.Rect(rows_clip.x, y, rows_clip.width - 14, self.history_row_height - 2)
+            if row_index % 2 == 0:
+                pygame.draw.rect(surface, palette['row_alt'], row_rect, border_radius=6)
+
+            self.draw_text(surface, f'{index}.', self.tiny_font, palette['muted'], row_rect.x + 10, y + 7)
+            self.draw_text(surface, self.truncate_text(white_move, self.small_font, 76), self.small_font, palette['title'], row_rect.x + 40, y + 6)
+            self.draw_text(surface, self.truncate_text(black_move, self.small_font, 76), self.small_font, palette['body'], row_rect.x + 128, y + 6)
 
         surface.set_clip(previous_clip)
         self.draw_history_scrollbar(surface, palette, len(pairs), visible_rows)
 
-        self.draw_text(surface, 'Click difficulty to change AI', self.small_font, palette['muted'], panel_x + 25, HEIGHT - 214)
-        self.draw_text(surface, 'Mouse wheel: scroll moves', self.small_font, palette['muted'], panel_x + 25, HEIGHT - 194)
-        self.draw_text(surface, 'Controls: T theme   R reset', self.small_font, palette['muted'], panel_x + 25, HEIGHT - 172)
+    def draw_controls_card(self, surface, panel_x, palette):
+        card = pygame.Rect(panel_x + self.panel_margin, 650, self.panel_inner_width, 58)
+        self.draw_card(surface, card, palette, radius=12, shadow=False)
+        self.draw_text(surface, 'CONTROLS', self.small_font, palette['muted'], card.x + 14, card.y + 10)
+        self.draw_text(surface, 'T theme     R reset', self.tiny_font, palette['body'], card.x + 14, card.y + 32)
+        self.draw_text_right(surface, 'Wheel scrolls moves', self.tiny_font, palette['body'], card.right - 14, card.y + 32)
 
-        resign_color = palette['resign'] if not self.game_over else palette['disabled']
-        draw_color = palette['button'] if not self.game_over else palette['disabled']
-        self.draw_button(surface, self.resign_button, 'Surrender', resign_color)
-        self.draw_button(surface, self.draw_offer_button, 'Ask for Draw', draw_color)
+    def draw_panel(self, surface):
+        panel_x = BOARD_SIZE
+        palette = self.ui_palette()
+
+        self.draw_panel_background(surface, panel_x, palette)
+        self.draw_header(surface, panel_x, palette)
+        self.draw_player_card(surface, panel_x, palette)
+        self.draw_difficulty_card(surface, panel_x, palette)
+        self.draw_status_card(surface, panel_x, palette)
+        self.draw_history_card(surface, panel_x, palette)
+        self.draw_controls_card(surface, panel_x, palette)
+
+        resign_color = palette['danger'] if not self.game_over else palette['disabled']
+        draw_color = palette['accent'] if not self.game_over else palette['disabled']
+        self.draw_button(surface, self.resign_button, 'Surrender', resign_color, disabled=self.game_over)
+        self.draw_button(surface, self.draw_offer_button, 'Ask for Draw', draw_color, disabled=self.game_over)
 
     def draw_result_overlay(self, surface):
         if not self.game_over:
@@ -534,22 +659,31 @@ class Main:
         overlay.fill(palette['overlay'])
         surface.blit(overlay, (0, 0))
 
-        card_width = 500
-        card_height = 310
+        card_width = 520
+        card_height = 320
         card = pygame.Rect((WIDTH - card_width) // 2, (HEIGHT - card_height) // 2, card_width, card_height)
-        pygame.draw.rect(surface, palette['card_bg'], card, border_radius=18)
-        pygame.draw.rect(surface, palette['card_border'], card, width=3, border_radius=18)
+
+        shadow = pygame.Surface((card_width + 20, card_height + 20), pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 130), (10, 12, card_width, card_height), border_radius=22)
+        surface.blit(shadow, (card.x - 10, card.y - 10))
+
+        pygame.draw.rect(surface, palette['card_bg'], card, border_radius=22)
+        pygame.draw.rect(surface, palette['card_border'], card, width=1, border_radius=22)
+
+        top_bar = pygame.Rect(card.x, card.y, card.width, 76)
+        pygame.draw.rect(surface, palette['accent_dark'], top_bar, border_top_left_radius=22, border_top_right_radius=22)
+        pygame.draw.line(surface, palette['line'], (card.x, card.y + 76), (card.right, card.y + 76), 1)
 
         center_x = card.centerx
-        self.draw_centered_text(surface, 'Game Over', self.heading_font, palette['muted'], center_x, card.y + 42)
-        self.draw_centered_text(surface, self.result_title, self.result_font, palette['title'], center_x, card.y + 92)
-        self.draw_centered_text(surface, self.result_message, self.body_font, palette['body'], center_x, card.y + 144)
+        self.draw_centered_text(surface, 'GAME OVER', self.small_font, palette['muted'], center_x, card.y + 26)
+        self.draw_centered_text(surface, self.result_title, self.result_font, palette['title'], center_x, card.y + 58)
+        self.draw_centered_text(surface, self.result_message, self.body_bold_font, palette['body'], center_x, card.y + 124)
 
         if self.result_detail:
-            self.draw_centered_text(surface, self.result_detail, self.small_font, palette['muted'], center_x, card.y + 174)
+            self.draw_centered_text(surface, self.result_detail, self.body_font, palette['muted'], center_x, card.y + 154)
 
-        self.draw_centered_text(surface, 'Press R to reset or click Play Again.', self.small_font, palette['muted'], center_x, card.y + 214)
-        self.draw_button(surface, self.play_again_button, 'Play Again', palette['button'])
+        self.draw_centered_text(surface, 'Press R to reset or click Play Again.', self.small_font, palette['muted'], center_x, card.y + 210)
+        self.draw_button(surface, self.play_again_button, 'Play Again', palette['accent'])
 
     def draw_screen(self):
         game = self.game
