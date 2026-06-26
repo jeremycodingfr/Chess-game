@@ -1,4 +1,3 @@
-
 from color import Color
 
 class Theme:
