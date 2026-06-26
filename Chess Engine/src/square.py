@@ -10,6 +10,10 @@ class Square:
         self.alphacol = self.ALPHACOLS[col]
 
     def __eq__(self, other):
+        if other is None:
+            return False
+        if not hasattr(other, 'row') or not hasattr(other, 'col'):
+            return False
         return self.row == other.row and self.col == other.col
 
     def has_piece(self):

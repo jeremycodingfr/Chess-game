@@ -14,7 +14,6 @@ class Game:
         self.board = Board()
         self.dragger = Dragger()
         self.config = Config()
-        self.image_cache = {}
 
     # blit methods
 
@@ -50,15 +49,6 @@ class Game:
                     # blit
                     surface.blit(lbl, lbl_pos)
 
-    def get_piece_image(self, piece, size=80):
-        piece.set_texture(size=size)
-        texture = piece.texture
-
-        if texture not in self.image_cache:
-            self.image_cache[texture] = pygame.image.load(texture).convert_alpha()
-
-        return self.image_cache[texture]
-
     def show_pieces(self, surface):
         for row in range(ROWS):
             for col in range(COLS):
@@ -68,7 +58,8 @@ class Game:
                     
                     # all pieces except dragger piece
                     if piece is not self.dragger.piece:
-                        img = self.get_piece_image(piece, size=80)
+                        piece.set_texture(size=80)
+                        img = pygame.image.load(piece.texture)
                         img_center = col * SQSIZE + SQSIZE // 2, row * SQSIZE + SQSIZE // 2
                         piece.texture_rect = img.get_rect(center=img_center)
                         surface.blit(img, piece.texture_rect)
@@ -118,10 +109,7 @@ class Game:
         self.next_player = 'white' if self.next_player == 'black' else 'black'
 
     def set_hover(self, row, col):
-        if Square.in_range(row, col):
-            self.hovered_sqr = self.board.squares[row][col]
-        else:
-            self.hovered_sqr = None
+        self.hovered_sqr = self.board.squares[row][col]
 
     def change_theme(self):
         self.config.change_theme()
