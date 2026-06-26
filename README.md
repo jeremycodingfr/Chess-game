@@ -97,4 +97,3 @@ The chess engine supports normal chess movement and several special rules, inclu
 ## Author
 
 Created by Jeremy Nguyen.
-::: 
