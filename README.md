@@ -90,7 +90,6 @@ The chess engine supports normal chess movement and several special rules, inclu
 * Undo move
 * Save and load game
 * Larger opening book
-* Timer system
 * Online multiplayer
 * Web or PWA deployment
 
